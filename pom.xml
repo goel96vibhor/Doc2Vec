@@ -8,6 +8,11 @@
     <artifactId>Word2Vec</artifactId>
     <version>1.0-SNAPSHOT</version>
     <dependencies>
+        <dependency>
+            <groupId>com.medianet.vectorspaceanalysis</groupId>
+            <artifactId>UtilityServices</artifactId>
+            <version>1.0</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -142,7 +147,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>Word2Vec</finalName>
+                            <finalName>Doc2Vec</finalName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.media.net.Word2VecMain</mainClass>

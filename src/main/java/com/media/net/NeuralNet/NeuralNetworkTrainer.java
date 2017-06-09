@@ -59,7 +59,10 @@ public class NeuralNetworkTrainer
     long numTrainedTokens;
     protected AtomicLong actualWordCount;
     protected AtomicInteger fileCount;
-
+    public boolean cbow_Mean;
+    public boolean learnVectors;
+    public boolean learnHidden;
+    public Word2VecAlgoType word2VecAlgo;
     Random generator= new Random(1000);
 
     public NeuralNetworkTrainer(Map<String,HuffmanNode> huffmanNodeMap,ArrayList<String> index2Word,
@@ -79,6 +82,10 @@ public class NeuralNetworkTrainer
         this.vocabSize=huffmanNodeMap.size();
         this.numTrainedTokens=0;
         this.actualWordCount=new AtomicLong();
+        this.learnHidden=networkConfig.learnHidden;
+        this.learnVectors= networkConfig.learnVectors;
+        this.word2VecAlgo= networkConfig.word2VecAlgoType;
+        this.cbow_Mean= networkConfig.cbow_Mean;
 
         this.syn0 = new double[vocabSize][layerSize];
         this.syn1 = new double[vocabSize][layerSize];
@@ -148,15 +155,40 @@ public class NeuralNetworkTrainer
     {
 
         File directory= new File(writeDirPath);
-        File[] listFiles= directory.listFiles();
+        ArrayList<File> listFiles= new ArrayList<File>();
+        for(File file:directory.listFiles())
+        {
+            if(file.isDirectory())
+            {
+                for(File internalFile : file.listFiles())
+                {
+                    if (internalFile.isFile())listFiles.add(internalFile);
+                }
+            }
+            else if (file.isFile())
+            {
+                listFiles.add(file);
+            }
+        }
+
+
+
+        System.out.println(listFiles.size());
+
+        addDocTags(listFiles);
+
         fileCount=new AtomicInteger();
         ListeningExecutorService ex = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numThreads));
-
+//        for(int i=0;i<listFiles.size();i++)System.out.print(listFiles.get(i).getParent()+"/"+listFiles.get(i).getName()+" ");
+//        Collections.shuffle(listFiles);
+//        System.out.println();
+//        for(int i=0;i<listFiles.size();i++)System.out.print(listFiles.get(i).getParent()+"/"+listFiles.get(i).getName()+" ");
         try {
             long start= System.currentTimeMillis();
             System.out.println(start);
             for(int i=0;i<iterations;i++)
             {
+                Collections.shuffle(Arrays.asList(listFiles));
                 List<Callable<Void>> tasks= new ArrayList<Callable<Void>>();
                 for(int j=0;j<numThreads;j++)
                 {
@@ -172,14 +204,20 @@ public class NeuralNetworkTrainer
                 }
                 catch (ExecutionException e)
                 {
+                    e.printStackTrace();
                     throw new IllegalStateException("error training neural network"+e.getCause());
                 }
+                System.out.println("completed iteration: "+i);
             }
             long end=System.currentTimeMillis();
 
             System.out.println("Time taken for training:"+(end-start)+"ms.");
             System.out.println("total words trained:"+actualWordCount);
             ex.shutdown();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
         finally {
             ex.shutdownNow();
@@ -188,7 +226,12 @@ public class NeuralNetworkTrainer
 
     }
 
-    public NeuralNetWorker createWorker(int workerNo,File[] listFiles,NeuralNetworkTrainer networkTrainer)
+    public void addDocTags(ArrayList<File> listFiles)
+    {
+
+    }
+
+    public NeuralNetWorker createWorker(int workerNo,ArrayList<File> listFiles,NeuralNetworkTrainer networkTrainer)
     {
         return new NeuralNetWorker(workerNo,listFiles,this);
     }
@@ -365,6 +408,45 @@ public class NeuralNetworkTrainer
         return probabWordforSentence(sentence,10);
     }
 
+    public void setIterations(int iterations) {
+        this.iterations = iterations;
+    }
+
+    public void setNumThreads(int numThreads) {
+        this.numThreads = numThreads;
+    }
+
+    public void setNegativeSamples(int negativeSamples) {
+        this.negativeSamples = negativeSamples;
+    }
+
+    public void setAlpha(double alpha) {
+        this.alpha = alpha;
+    }
+
+    public void setInitialLearningRate(double initialLearningRate) {
+        this.initialLearningRate = initialLearningRate;
+    }
+
+    public void setSynParameters(NeuralNetworkTrainer trainer)
+    {
+        this.syn0=trainer.syn0;
+        this.syn1=trainer.syn1;
+        this.synNeg=trainer.synNeg;
+    }
+
+    public double[][] getSyn0() {
+        return syn0;
+    }
+
+    public double[][] getSyn1() {
+        return syn1;
+    }
+
+    public double[][] getSynNeg() {
+        return synNeg;
+    }
+
     public Double matrixDot(double [] vector1,double [] vector2) throws Exception
     {
         if(vector1.length!=vector2.length)throw new Exception("vectors to be dot multiplied have unequal dimensions");
@@ -396,7 +478,7 @@ public class NeuralNetworkTrainer
         System.out.println(Arrays.toString(trainer.syn1[510844]));
         System.out.println(Arrays.toString(trainer.synNeg[0]));
         try{
-            FileOutputStream fos = new FileOutputStream(ApplicationProperties.getProperty("NETWORK_FILE"));
+            FileOutputStream fos = new FileOutputStream(ApplicationProperties.getProperty("WORD_NETWORK_FILE"));
 
             ObjectOutputStream outputStream = new ObjectOutputStream(fos);
             outputStream.writeInt(trainer.numThreads);
@@ -427,7 +509,7 @@ public class NeuralNetworkTrainer
         NeuralNetworkConfig networkConfig;
         NeuralNetworkTrainer trainer=null;
         try{
-            FileInputStream fis = new FileInputStream(ApplicationProperties.getProperty("NETWORK_FILE"));
+            FileInputStream fis = new FileInputStream(ApplicationProperties.getProperty("WORD_NETWORK_FILE"));
             ObjectInputStream inputStream = new ObjectInputStream(fis);
             int numThreads=inputStream.readInt();
             int iterations=inputStream.readInt();

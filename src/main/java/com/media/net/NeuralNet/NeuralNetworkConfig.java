@@ -21,6 +21,12 @@ public class NeuralNetworkConfig
     int negativeSamples;
     double downSampleRate;
     double initialLearningRate;
+    boolean learnWords;
+    boolean learnHidden;
+    boolean learnVectors;
+    boolean cbow_Mean;
+    Doc2VecAlgoType doc2VecAlgoType;
+    Word2VecAlgoType word2VecAlgoType;
 
     public NeuralNetworkConfig(int numThreads,
                         int iterations,
@@ -75,6 +81,42 @@ public class NeuralNetworkConfig
 
     public NeuralNetworkConfig setInitialLearningRate(double initialLearningRate) {
         this.initialLearningRate = initialLearningRate;
+        return this;
+    }
+
+    public NeuralNetworkConfig setLearnHidden(boolean learnHidden)
+    {
+        this.learnHidden=learnHidden;
+        return this;
+    }
+
+    public NeuralNetworkConfig setLearnWords(boolean learnWords)
+    {
+        this.learnWords=learnWords;
+        return this;
+    }
+
+    public NeuralNetworkConfig setLearnVectors(boolean learnVectors)
+    {
+        this.learnVectors= learnVectors;
+        return this;
+    }
+
+    public NeuralNetworkConfig setDoc2VecAlgoType(Doc2VecAlgoType doc2VecAlgoType)
+    {
+        this.doc2VecAlgoType= doc2VecAlgoType;
+        return this;
+    }
+
+    public NeuralNetworkConfig setWord2VecAlgoType(Word2VecAlgoType word2VecAlgoType)
+    {
+        this.word2VecAlgoType= word2VecAlgoType;
+        return this;
+    }
+
+    public NeuralNetworkConfig setCbowMean(boolean cbow_Mean)
+    {
+        this.cbow_Mean= cbow_Mean;
         return this;
     }
 }

@@ -16,5 +16,17 @@ public class Util {
         }
     }
 
+    public static String getTitleFromUrl(String url){
+        if (url.startsWith("/"))    url = url.substring(1);
+        if (url.charAt(url.length() - 1) != '/')    url = url + "/";
+        if (url.startsWith("http://"))  url = url.replace("http://" , "");
+        if (url.startsWith("https://"))  url = url.replace("https://" , "");
+        if (url.indexOf("/") == url.length()-1)   return "";
+        url = url.substring(url.indexOf("/") + 1);
+        String[] split = url.toLowerCase().split("[^\\w']+");
+        StringBuilder builder = new StringBuilder();
+        for (String s : split)  builder.append(s).append(" ");
+        return builder.toString();
+    }
 
 }

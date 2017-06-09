@@ -2,7 +2,6 @@ package com.media.net.DataPreparation;
 
 import com.media.net.Beans.DocBean;
 import com.media.net.PreprocessingEntities.VocabBuilder;
-import com.sun.org.apache.xml.internal.resolver.readers.SAXCatalogReader;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -63,9 +62,9 @@ public class ShortFileReader
         return tokens;
     }
 
-    public List<DocBean> readDocBeansfromResource(File fileName)
+    public ArrayList<DocBean> readDocBeansfromResource(File fileName)
     {
-        List<DocBean> docBeans=new ArrayList<DocBean>();
+        ArrayList<DocBean> docBeans=new ArrayList<DocBean>();
         BufferedReader reader;
         DocBean docBean;
         ArrayList<String> docTokens = null;

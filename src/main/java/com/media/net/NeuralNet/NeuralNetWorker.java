@@ -16,16 +16,16 @@ import java.util.concurrent.Callable;
 
 public class NeuralNetWorker implements Callable<Void>
 {
-    private static final int LEARNING_RATE_UPDATE_FREQUENCY = 10000;
+    protected static final int LEARNING_RATE_UPDATE_FREQUENCY = 10000;
     int workerNo;
-    File[] listFiles;
-    NeuralNetworkTrainer trainer;
+    ArrayList<File> listFiles;
+    private NeuralNetworkTrainer trainer;
     int wordCount=0;
     int lastWordCount=0;
     int[] wordIndices= new int[Integer.parseInt(ApplicationProperties.getProperty("MAX_LINE_WORDS"))];
     HuffmanNode[] huffmanNodes= new HuffmanNode[Integer.parseInt(ApplicationProperties.getProperty("MAX_LINE_WORDS"))];
     double [] neule;
-    public NeuralNetWorker(int workerNo,File[] listFiles,NeuralNetworkTrainer networkTrainer)
+    public NeuralNetWorker(int workerNo,ArrayList<File> listFiles,NeuralNetworkTrainer networkTrainer)
     {
         this.workerNo=workerNo;
         this.listFiles=listFiles;
@@ -33,13 +33,25 @@ public class NeuralNetWorker implements Callable<Void>
         neule= new double[trainer.layerSize];
     }
 
+    public NeuralNetWorker(int workerNo,ArrayList<File> listFiles)
+    {
+        this.workerNo=workerNo;
+        this.listFiles=listFiles;
+//        neule= new double[trainer.layerSize];
+    }
+
+    public NeuralNetWorker()
+    {
+
+    }
+
     @Override
-    public final Void call() throws Exception {
-        run();
+    public Void call() throws Exception {
+        run(trainer);
         return null;
     }
 
-    public void run()
+    public void run(NeuralNetworkTrainer trainer)
     {
         int currentFileNo=workerNo;
         List<ArrayList<String>> fileTokens= null;
@@ -48,9 +60,9 @@ public class NeuralNetWorker implements Callable<Void>
 //        for(int i=0;i<listFiles.length;i++)
 //        System.out.println("filename:"+listFiles[i].getName());
         ShortFileReader shortFileReader= new ShortFileReader();
-        while (currentFileNo<listFiles.length)
+        while (currentFileNo<listFiles.size())
         {
-            fileTokens= shortFileReader.readTokensfromResource(listFiles[currentFileNo]);
+            fileTokens= shortFileReader.readTokensfromResource(listFiles.get(currentFileNo));
 
             for(ArrayList<String> sentence:fileTokens)
             {
@@ -72,15 +84,18 @@ public class NeuralNetWorker implements Callable<Void>
                     wordCount++;
                     if(wordCount-lastWordCount>LEARNING_RATE_UPDATE_FREQUENCY)
                     {
-                        updateAlpha();
+                        updateAlpha(trainer);
                         //System.out.println("updating alpha");
                     }
 
                 }
-                trainSentence(filteredSentence);
+                if(trainer.word2VecAlgo==Word2VecAlgoType.SG)
+                    trainWordsSG(filteredSentence,trainer.alpha ,true, true,trainer);
+                else
+                    trainWordsCBOW(filteredSentence,trainer.alpha,true,true, trainer);
 //                System.out.println("syn for 1000th word :" + Arrays.toString(trainer.syn1[510844]));
             }
-            System.out.println("Read file :"+listFiles[currentFileNo].getName()+" currentfileno "+currentFileNo);
+            System.out.println("Read file :"+listFiles.get(currentFileNo).getName()+" currentfileno "+currentFileNo);
 //            System.out.println("syn for 1000th word :" + Arrays.toString(trainer.syn0[0]));
             currentFileNo+= trainer.numThreads;
             trainer.fileCount.addAndGet(1);
@@ -89,7 +104,7 @@ public class NeuralNetWorker implements Callable<Void>
         trainer.actualWordCount.addAndGet(wordCount-lastWordCount);
     }
 
-    public void updateAlpha()
+    public void updateAlpha(NeuralNetworkTrainer trainer)
     {
         long currentActual=trainer.actualWordCount.addAndGet(wordCount-lastWordCount);
         lastWordCount=wordCount;
@@ -97,7 +112,7 @@ public class NeuralNetWorker implements Callable<Void>
                 ,0.0001);
     }
 
-    public void trainSentence(ArrayList<String> sentence)
+    public void trainWordsSG(List<String> sentence,double alpha ,boolean learnHidden, boolean learnVectors,NeuralNetworkTrainer trainer)
     {
         int length=sentence.size();
         String word;
@@ -136,7 +151,7 @@ public class NeuralNetWorker implements Callable<Void>
 
                     f=NeuralNetworkTrainer.exp_table
                             [(int)((f+trainer.MAX_EXP)*NeuralNetworkTrainer.EXP_TABLE_SIZE/(2*NeuralNetworkTrainer.MAX_EXP))];
-                    g=(1.0-huffmanNodes[currPos].code[i]-f)*trainer.alpha;
+                    g=(1.0-huffmanNodes[currPos].code[i]-f)*alpha;
                     for(int j=0;j<trainer.layerSize;j++)
                     {
                         neule[j]+=g*trainer.syn1[l2][j];
@@ -144,7 +159,7 @@ public class NeuralNetWorker implements Callable<Void>
                     sum=0.0;
                     for(int j=0;j<trainer.layerSize;j++)
                     {
-                        trainer.syn1[l2][j]+=g*trainer.syn0[l1][j];
+                        if (learnHidden)trainer.syn1[l2][j]+=g*trainer.syn0[l1][j];
                         sum+=trainer.syn1[l2][j]*trainer.syn1[l2][j];
                     }
 //                    for(int j=0;j<trainer.layerSize;j++)
@@ -154,11 +169,11 @@ public class NeuralNetWorker implements Callable<Void>
 //                    System.out.println("f:"+f+" g:"+g);
 //                    System.out.println("syno l2:"+l2+" word:"+trainer.index2Word.get(l2)+Arrays.toString(trainer.syn1[l2]));
                 }
-                handleNegativeSampling(huffmanNodes[currPos], trainer.syn0[l1]);
+                handleNegativeSampling(huffmanNodes[currPos], trainer.syn0[l1],alpha,learnHidden, trainer);
                 sum=0.0;
                 for(int j=0;j<trainer.layerSize;j++)
                 {
-                    trainer.syn0[l1][j]+= neule[j];
+                    if (learnVectors)trainer.syn0[l1][j]+= neule[j];
                     sum+=trainer.syn0[l1][j]*trainer.syn0[l1][j];
                 }
 //                for(int j=0;j<trainer.layerSize;j++)
@@ -170,7 +185,7 @@ public class NeuralNetWorker implements Callable<Void>
         }
     }
 
-    public void handleNegativeSampling(HuffmanNode huffmanNode, double [] neul)
+    public void handleNegativeSampling(HuffmanNode huffmanNode, double [] neul,double alpha ,boolean learnHidden,NeuralNetworkTrainer trainer)
     {
         int target, label;
         int l2;
@@ -203,7 +218,7 @@ public class NeuralNetWorker implements Callable<Void>
             else if(f<-trainer.MAX_EXP)g=label-0;
 
             else g=label-trainer.exp_table[(int)((f+trainer.MAX_EXP)*NeuralNetworkTrainer.EXP_TABLE_SIZE/(2*NeuralNetworkTrainer.MAX_EXP))];
-            g*=trainer.alpha;
+            g*=alpha;
             for(int j=0;j<trainer.layerSize;j++)
             {
                 neule[j]+=g*trainer.synNeg[l2][j];
@@ -211,7 +226,7 @@ public class NeuralNetWorker implements Callable<Void>
             sum=0.0;
             for (int j=0;j<trainer.layerSize;j++)
             {
-                trainer.synNeg[l2][j]+=g*neul[j];
+                if (learnHidden)trainer.synNeg[l2][j]+=g*neul[j];
                 sum+=trainer.synNeg[l2][j]*trainer.synNeg[l2][j];
             }
 //            for (int j=0;j<trainer.layerSize;j++)
@@ -221,5 +236,140 @@ public class NeuralNetWorker implements Callable<Void>
         }
 
     }
+
+    public void trainWord(String word, double[] vector,double alpha ,boolean learnHidden, boolean learnVectors,NeuralNetworkTrainer trainer)
+    {
+        int index;
+        double f,g,sum;
+        int l1,l2;
+//        double [] neule = new double[trainer.layerSize];
+        if(vector.length==trainer.layerSize && trainer.word2index.containsKey(word))
+        {
+            HuffmanNode huffmanNode= trainer.huffmanNodeMap.get(word);
+            index= trainer.word2index.get(word);
+            for(int i=0;i<trainer.layerSize;i++)
+            {
+                neule[i]=0;
+            }
+            for(int i=0;i<huffmanNode.code.length;i++)
+            {
+                f=0.0;
+                l2=huffmanNode.points[i];
+                for(int j=0;j<trainer.layerSize;j++)
+                {
+                    f+=vector[j]*trainer.syn1[l2][j];
+                }
+                if(f<=-trainer.MAX_EXP)continue;//f=-(trainer.MAX_EXP-1e-8);
+                if(f>=trainer.MAX_EXP)continue;//f=(trainer.MAX_EXP-1e-8);
+
+                f=NeuralNetworkTrainer.exp_table
+                        [(int)((f+trainer.MAX_EXP)*NeuralNetworkTrainer.EXP_TABLE_SIZE/(2*NeuralNetworkTrainer.MAX_EXP))];
+                g=(1.0-huffmanNode.code[i]-f)*alpha;
+                for(int j=0;j<trainer.layerSize;j++)
+                {
+                    neule[j]+=g*trainer.syn1[l2][j];
+                }
+                sum=0.0;
+                for(int j=0;j<trainer.layerSize;j++)
+                {
+                    if (learnHidden)trainer.syn1[l2][j]+=g*vector[j];
+                    sum+=trainer.syn1[l2][j]*trainer.syn1[l2][j];
+                }
+//                    for(int j=0;j<trainer.layerSize;j++)
+//                    {
+//                        if(sum!=0.0)trainer.syn1[l2][j]/=Math.sqrt(sum);
+//                    }
+//                    System.out.println("f:"+f+" g:"+g);
+//                    System.out.println("syno l2:"+l2+" word:"+trainer.index2Word.get(l2)+Arrays.toString(trainer.syn1[l2]));
+            }
+            handleNegativeSampling(huffmanNode, vector,alpha,learnHidden, trainer);
+            sum=0.0;
+            for(int j=0;j<trainer.layerSize;j++)
+            {
+                if (learnVectors)vector[j]+= neule[j];
+                sum+=vector[j]*vector[j];
+            }
+//                for(int j=0;j<trainer.layerSize;j++)
+//                {
+//                    if(sum!=0.0)trainer.syn0[l1][j]/=Math.sqrt(sum);
+//                }
+
+        }
+    }
+
+    public void trainWordsCBOW(ArrayList<String> sentence,double alpha , boolean learnHidden, boolean learnVectors,NeuralNetworkTrainer trainer)
+    {
+        int length=sentence.size();
+        String word;
+        int currWindow,wordPosinSent;
+        double f,g,sum;
+        int l1,l2;
+//        for(int i=0;i<length;i++)
+//        {
+//            wordIndices[i]=trainer.word2index.get(sentence.get(i));
+//            huffmanNodes[i]=trainer.huffmanNodeMap.get(sentence.get(i));
+//        }
+        double [] vector = new double[trainer.layerSize];
+        int count;
+        for(int currPos=0;currPos<length;currPos++)
+        {
+            currWindow=(trainer.generator.nextInt()%trainer.window+trainer.window)%trainer.window;
+            for(int i=0;i<trainer.layerSize;i++)vector[i]=0.0d;
+            count=0;
+            for(int a=currWindow;a<trainer.window*2+1-currWindow;a++)
+            {
+                if(a==trainer.window)continue;
+                wordPosinSent=a-trainer.window+currPos;
+                if(wordPosinSent<0||wordPosinSent>=length)continue;
+                l1=trainer.word2index.get(sentence.get(wordPosinSent));
+
+                count++;
+                for(int j=0;j<trainer.layerSize;j++)
+                {
+                    vector[j]+=trainer.syn0[l1][j];
+                }
+            }
+            if(trainer.cbow_Mean && count>0)
+            {
+                for(int j=0;j<trainer.layerSize;j++)
+                {
+                    vector[j]/=(double)count;
+                }
+            }
+            trainWord(sentence.get(currPos),vector,alpha,learnHidden,false, trainer);
+            if(learnVectors)
+            {
+                if(!trainer.cbow_Mean && count>0)
+                {
+                    for(int j=0;j<trainer.layerSize;j++)
+                    {
+                        neule[j]/=(double)count;
+                    }
+                }
+                for(int a=currWindow;a<trainer.window*2+1-currWindow;a++)
+                {
+                    if(a==trainer.window)continue;
+                    wordPosinSent=a-trainer.window+currPos;
+                    if(wordPosinSent<0||wordPosinSent>=length)continue;
+                    l1=trainer.word2index.get(sentence.get(wordPosinSent));
+
+                    sum=0.0;
+                    for(int j=0;j<trainer.layerSize;j++)
+                    {
+                        trainer.syn0[l1][j]+= neule[j];
+                        sum+=trainer.syn0[l1][j]*trainer.syn0[l1][j];
+                    }
+    //                for(int j=0;j<trainer.layerSize;j++)
+    //                {
+    //                    if(sum!=0.0)trainer.syn0[l1][j]/=Math.sqrt(sum);
+    //                }
+    //                System.out.println("syno l1:"+l1+" word:"+trainer.index2Word.get(l1)+Arrays.toString(trainer.syn0[l1]));
+                }
+            }
+        }
+    }
+
+
+
 
 }
