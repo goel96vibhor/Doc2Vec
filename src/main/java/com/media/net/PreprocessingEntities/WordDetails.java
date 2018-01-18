@@ -81,16 +81,16 @@ public class WordDetails
 
     public static void serializeWordDetails()
     {
-        System.out.println("vocabulary size:" + vocabulary.size());
-        System.out.println("index2word size:"+index2Word.size());
-        System.out.println("index2word first:"+index2Word.get(0)+", count:"+vocabulary.get(index2Word.get(0)));
-        System.out.println("index2word last:"+index2Word.get(index2Word.size()-1)+", count:"+vocabulary.get(index2Word.get(index2Word.size()-1)));
-        System.out.println("word2index first:"+index2Word.get(0)+", has word index:"+word2index.get(index2Word.get(0)));
-        System.out.println("word2index last:" + index2Word.get(index2Word.size() - 1) + ", has word index:" + word2index.get(index2Word.get(index2Word.size() - 1)));
-        System.out.println("huffman map size:" + huffmanNodeMap.size());
-        System.out.println("huffman node for word:" + index2Word.get(0));
+        logger.info("vocabulary size:" + vocabulary.size());
+        logger.info("index2word size:"+index2Word.size());
+        logger.info("index2word first:"+index2Word.get(0)+", count:"+vocabulary.get(index2Word.get(0)));
+        logger.info("index2word last:"+index2Word.get(index2Word.size()-1)+", count:"+vocabulary.get(index2Word.get(index2Word.size()-1)));
+        logger.info("word2index first:"+index2Word.get(0)+", has word index:"+word2index.get(index2Word.get(0)));
+        logger.info("word2index last:" + index2Word.get(index2Word.size() - 1) + ", has word index:" + word2index.get(index2Word.get(index2Word.size() - 1)));
+        logger.info("huffman map size:" + huffmanNodeMap.size());
+        logger.info("huffman node for word:" + index2Word.get(0));
         huffmanNodeMap.get(index2Word.get(0)).printHuffmanNode();
-        System.out.println("huffman node for word:"+index2Word.get(index2Word.size()-1));
+        logger.info("huffman node for word:"+index2Word.get(index2Word.size()-1));
         huffmanNodeMap.get(index2Word.get(index2Word.size()-1)).printHuffmanNode();
         try{
             FileOutputStream fos = new FileOutputStream(ApplicationProperties.getProperty("WORD_DETAILS_FILE"));
@@ -118,16 +118,16 @@ public class WordDetails
             word2index=(HashMap<String, Integer>)inputStream.readObject();
             huffmanNodeMap=(Map<String,HuffmanNode>)inputStream.readObject();
             inputStream.close();
-            System.out.println("vocabulary size:"+vocabulary.size());
-            System.out.println("index2word size:"+index2Word.size());
-            System.out.println("index2word first:"+index2Word.get(0)+", count:"+vocabulary.get(index2Word.get(0)));
-            System.out.println("index2word last:"+index2Word.get(index2Word.size()-1)+", count:"+vocabulary.get(index2Word.get(index2Word.size()-1)));
-            System.out.println("word2index first:"+index2Word.get(0)+", has word index:"+word2index.get(index2Word.get(0)));
-            System.out.println("word2index last:"+index2Word.get(index2Word.size()-1)+", has word index:"+word2index.get(index2Word.get(index2Word.size()-1)));
-            System.out.println("huffman map size:"+huffmanNodeMap.size());
-            System.out.println("huffman node for word:"+index2Word.get(0));
+            logger.info("vocabulary size:"+vocabulary.size());
+            logger.info("index2word size:"+index2Word.size());
+            logger.info("index2word first:"+index2Word.get(0)+", count:"+vocabulary.get(index2Word.get(0)));
+            logger.info("index2word last:"+index2Word.get(index2Word.size()-1)+", count:"+vocabulary.get(index2Word.get(index2Word.size()-1)));
+            logger.info("word2index first:"+index2Word.get(0)+", has word index:"+word2index.get(index2Word.get(0)));
+            logger.info("word2index last:"+index2Word.get(index2Word.size()-1)+", has word index:"+word2index.get(index2Word.get(index2Word.size()-1)));
+            logger.info("huffman map size:"+huffmanNodeMap.size());
+            logger.info("huffman node for word:"+index2Word.get(2));
             huffmanNodeMap.get(index2Word.get(0)).printHuffmanNode();
-            System.out.println("huffman node for word:"+index2Word.get(index2Word.size()-1));
+            logger.info("huffman node for word:"+index2Word.get(index2Word.size()-1));
             huffmanNodeMap.get(index2Word.get(index2Word.size()-1)).printHuffmanNode();
         }
         catch (Exception ex)

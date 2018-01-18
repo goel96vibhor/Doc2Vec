@@ -4,14 +4,10 @@ package com.media.net;
  */
 
 import com.media.net.Beans.DocBean;
-import com.media.net.Beans.UrlBean;
-import com.media.net.DataPreparation.*;
 import com.media.net.NeuralNet.*;
-import com.media.net.PreprocessingEntities.VocabBuilder;
 import com.media.net.PreprocessingEntities.WordDetails;
 import com.media.net.Utils.ApplicationProperties;
 import com.media.net.Utils.ResultSet;
-import com.media.net.Utils.StopWordHash;
 import com.media.net.Utils.UrlDataExtractor;
 import org.apache.log4j.Logger;
 

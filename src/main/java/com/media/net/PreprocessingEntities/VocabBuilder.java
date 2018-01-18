@@ -160,7 +160,7 @@ public class VocabBuilder
             if(token.matches(".*[a-zA-Z]+.*")&&token.length()>1)
             {
 //                if(!StopWordHash.contains(token))
-                tokenizedString.add(token);
+                tokenizedString.add(token.trim().toLowerCase());
             }
         }
         return tokenizedString;

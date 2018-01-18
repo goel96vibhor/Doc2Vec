@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.media.net.DataPreparation.ShortFileReader;
 import com.media.net.PreprocessingEntities.HuffmanNode;
 import com.media.net.PreprocessingEntities.VocabBuilder;
 import com.media.net.Utils.ApplicationProperties;
@@ -68,6 +67,7 @@ public class NeuralNetworkTrainer
     public NeuralNetworkTrainer(Map<String,HuffmanNode> huffmanNodeMap,ArrayList<String> index2Word,
                          HashMap<String,Integer> word2index,NeuralNetworkConfig networkConfig)
     {
+        System.out.println("Initializing neuralnetworktrainer:");
         this.huffmanNodeMap=huffmanNodeMap;
         this.index2Word=index2Word;
         this.word2index=word2index;
@@ -86,12 +86,14 @@ public class NeuralNetworkTrainer
         this.learnVectors= networkConfig.learnVectors;
         this.word2VecAlgo= networkConfig.word2VecAlgoType;
         this.cbow_Mean= networkConfig.cbow_Mean;
-
+        System.out.println("Initializing vectors:");
         this.syn0 = new double[vocabSize][layerSize];
         this.syn1 = new double[vocabSize][layerSize];
         this.synNeg = new double[vocabSize][layerSize];
         this.table = new int[TABLE_SIZE];
+        System.out.println("Initializin weights:");
         initializeWeights();
+        System.out.println("Initializin sample table:");
         initializeSampleTable();
 
         this.numTrainedTokens=0;
@@ -245,7 +247,7 @@ public class NeuralNetworkTrainer
             ArrayList<ResultSet> similarWords = mostSimilartoVector(syn0[word2index.get(word)],topn+1);
             for(Iterator<ResultSet> iterator=similarWords.iterator();iterator.hasNext();)
             {
-                similarWord= iterator.next().getWord();
+                similarWord= iterator.next().getEntity();
                 if (similarWord.equals(word))
                 {
                     iterator.remove();
@@ -268,7 +270,7 @@ public class NeuralNetworkTrainer
         int wordFound =0;
         for(String word:positive)
         {
-            if(!word2index.containsKey(word)) continue;
+            if(!word2index.containsKey(word))throw new Exception("The passed words are not in the vocabulary.");
             wordFound++;
             for(int i=0;i<layerSize;i++)
             {
@@ -277,7 +279,7 @@ public class NeuralNetworkTrainer
         }
         for(String word:negative)
         {
-            if(!word2index.containsKey(word)) continue;
+            if(!word2index.containsKey(word))throw new Exception("The passed words are not in the vocabulary.");
             wordFound++;
             for(int i=0;i<layerSize;i++)
             {
@@ -290,7 +292,7 @@ public class NeuralNetworkTrainer
         int curr=0;
         while(similarWords.size()<topn)
         {
-            if(positive.contains(extendedWords.get(curr).getWord())||negative.contains(extendedWords.get(curr).getWord()));
+            if(positive.contains(extendedWords.get(curr).getEntity())||negative.contains(extendedWords.get(curr).getEntity()));
             else similarWords.add(extendedWords.get(curr));
             curr++;
         }

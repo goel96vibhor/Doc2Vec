@@ -6,6 +6,7 @@ import com.media.net.DataPreparation.ShortFileReader;
 import com.media.net.PreprocessingEntities.HuffmanNode;
 import com.media.net.Utils.ApplicationProperties;
 import com.media.net.Utils.ResultSet;
+import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.util.*;
@@ -25,6 +26,7 @@ public class Doc2VecTrainer extends NeuralNetworkTrainer
     public Doc2VecAlgoType doc2vecAlgo;
     public boolean learnWords;
     public int numDocuments;
+    private static Logger logger = Logger.getLogger(Doc2VecTrainer.class.getName());
     public Doc2VecTrainer(Map<String,HuffmanNode> huffmanNodeMap,ArrayList<String> index2Word,
                                 HashMap<String,Integer> word2index,NeuralNetworkConfig networkConfig)
     {
@@ -129,27 +131,27 @@ public class Doc2VecTrainer extends NeuralNetworkTrainer
 
     public static void serializeNetwork(Doc2VecTrainer trainer)
     {
-        System.out.println("Network details:");
-        System.out.println(trainer.numThreads);
-        System.out.println(trainer.iterations);
-        System.out.println(trainer.layerSize);
-        System.out.println(trainer.window);
-        System.out.println(trainer.negativeSamples);
-        System.out.println(trainer.downSampleRate);
-        System.out.println(trainer.alpha);
-        System.out.println(trainer.initialLearningRate);
-        System.out.println(trainer.numTrainedTokens);
-        System.out.println(trainer.actualWordCount.get());
-        System.out.println(Arrays.toString(trainer.syn0[0]));
-        System.out.println(Arrays.toString(trainer.syn1[510844]));
-        System.out.println(Arrays.toString(trainer.synNeg[0]));
-        System.out.println(trainer.documents.size());
-        System.out.println(trainer.docTagtoIndex.size());
-        System.out.println(trainer.doc_syn0.size());
-        System.out.println(trainer.doc_syn0.get(10).toString());
-        System.out.println(trainer.doc2vecAlgo+" "+trainer.word2VecAlgo);
-        System.out.println("learnWords:"+trainer.learnWords+" learnHidden:"+trainer.learnHidden+" learnVectors:"+trainer.learnVectors);
-        System.out.println("cbowMean:"+trainer.cbow_Mean);
+        logger.info("Network details:");
+        logger.info(trainer.numThreads);
+        logger.info(trainer.iterations);
+        logger.info(trainer.layerSize);
+        logger.info(trainer.window);
+        logger.info(trainer.negativeSamples);
+        logger.info(trainer.downSampleRate);
+        logger.info(trainer.alpha);
+        logger.info(trainer.initialLearningRate);
+        logger.info(trainer.numTrainedTokens);
+        logger.info(trainer.actualWordCount.get());
+        logger.info(Arrays.toString(trainer.syn0[0]));
+        logger.info(Arrays.toString(trainer.syn1[510844]));
+        logger.info(Arrays.toString(trainer.synNeg[0]));
+        logger.info(trainer.documents.size());
+        logger.info(trainer.docTagtoIndex.size());
+        logger.info(trainer.doc_syn0.size());
+        logger.info(trainer.doc_syn0.get(10).toString());
+        logger.info(trainer.doc2vecAlgo+" "+trainer.word2VecAlgo);
+        logger.info("learnWords:"+trainer.learnWords+" learnHidden:"+trainer.learnHidden+" learnVectors:"+trainer.learnVectors);
+        logger.info("cbowMean:"+trainer.cbow_Mean);
         try{
             FileOutputStream fos = new FileOutputStream(ApplicationProperties.getProperty("DOC_NETWORK_FILE"));
 
@@ -260,10 +262,11 @@ public class Doc2VecTrainer extends NeuralNetworkTrainer
             System.out.println(trainer.doc_syn0.get(10).toString());
             System.out.println(trainer.doc2vecAlgo+" "+trainer.word2VecAlgo);
             System.out.println("learnWords:"+trainer.learnWords+" learnHidden:"+trainer.learnHidden+" learnVectors:"+trainer.learnVectors);
-            System.out.println("cbowMean:"+trainer.cbow_Mean);
+            System.out.println("cbowMean:" + trainer.cbow_Mean);
         }
         catch (Exception ex)
         {
+            logger.info(ex.getMessage());
             System.out.println(ex.getMessage());
             ex.printStackTrace();
         }

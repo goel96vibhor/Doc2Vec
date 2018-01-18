@@ -6,21 +6,21 @@ package com.media.net.Utils;
 
 public class ResultSet
 {
-    private String word;
+    private String entity;
     private Double similarityScore;
 
     public ResultSet(String word, double similarityScore)
     {
-        this.word=word;
+        this.entity =word;
         this.similarityScore=similarityScore;
     }
 
-    public String getWord() {
-        return word;
+    public String getEntity() {
+        return entity;
     }
 
-    public void setWord(String word) {
-        this.word = word;
+    public void setEntity(String entity) {
+        this.entity = entity;
     }
 
     public Double getSimilarityScore() {
@@ -33,6 +33,6 @@ public class ResultSet
 
     public void printResultSet()
     {
-        System.out.println("Word:"+word+" similarity score:"+similarityScore);
+        System.out.println("Word:"+ entity +" similarity score:"+similarityScore);
     }
 }
