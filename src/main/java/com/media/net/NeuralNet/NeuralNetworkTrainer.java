@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.media.net.PreprocessingEntities.HuffmanNode;
 import com.media.net.PreprocessingEntities.VocabBuilder;
+import com.media.net.PreprocessingEntities.WordDetails;
 import com.media.net.Utils.ApplicationProperties;
 import com.media.net.Utils.ResultSet;
 import org.apache.log4j.Logger;
@@ -352,6 +353,13 @@ public class NeuralNetworkTrainer
         else throw new  Exception("both the words should be present in the vocabulary.");
     }
 
+    public Double sentencePairSimilarity(String sentence1, String sentence2) throws Exception
+    {
+        double vector1[] = getTfWeightedTVforSentence(sentence1);
+        double vector2[] = getTfWeightedTVforSentence(sentence2);
+        return matrixDot(vector1,vector2);
+    }
+
     public ArrayList<ResultSet> probabWordforSentence(String sentence, int topn) throws Exception
     {
         Double score=0.0;
@@ -375,17 +383,10 @@ public class NeuralNetworkTrainer
             }
         }
         if ((wordFound==0))throw new Exception("none of the words in the sentence are in the vocabulary.");
+        double sentenceVector[] = getTfWeightedTVforSentence(sentence);
         for(int i=0;i<index2Word.size();i++)
         {
-            score=1.0;
-            for(String word:sentenceTokens)
-            {
-                if(word2index.containsKey(word))
-                {
-                    score*=  matrixDot(syn0[i],syn0[word2index.get(word)]);
-//                    score*=1.0/(1.0+Math.exp(-matrixDot(syn0[i],syn0[word2index.get(word)])));
-                }
-            }
+            score=matrixDot(sentenceVector,syn0[i]);
             wordScores.put(i,score);
         }
 
@@ -403,6 +404,60 @@ public class NeuralNetworkTrainer
             index++;
         }
         return similarWords;
+    }
+
+
+    public double [] getTVforWord(String word) throws Exception
+    {
+        if(WordDetails.word2index.containsKey(word))
+        {
+            return syn0[word2index.get(word)];
+        }
+        else throw new Exception("Word :"+word+" not present in vocabulary");
+    }
+
+
+    public double[] getTfWeightedTVforSentence(String sentence) throws Exception
+    {
+        int wordFound=0;
+        Double idf=0.0;
+        double vector[]= new double[layerSize];
+        for(int i=0;i<layerSize;i++)
+            vector[i]=0.0;
+        ArrayList<String> sentenceTokens= VocabBuilder.tokenize(sentence);
+        HashMap<Integer, Double> wordScores= new HashMap<Integer, Double>();
+        ArrayList<ResultSet> similarWords=new ArrayList<ResultSet>();
+        Comparator<Map.Entry<Integer, Double>> valueComparator = new Comparator<Map.Entry<Integer,Double>>() {
+            @Override public int compare(Map.Entry<Integer,Double> e1, Map.Entry<Integer,Double> e2)
+            {
+                Double v1 = e1.getValue();
+                Double v2 = e2.getValue();
+                return v2.compareTo(v1);
+            }
+        };
+        for(String word:sentenceTokens)
+        {
+            if(word2index.containsKey(word))
+            {
+                wordFound++;
+            }
+        }
+        if ((wordFound==0))throw new Exception("none of the words in the sentence are in the vocabulary.");
+
+        for(String word:sentenceTokens)
+        {
+            if(word2index.containsKey(word))
+            {
+                idf=1+Math.log(WordDetails.maxWordFreq*1.0/(1.0+WordDetails.vocabulary.get(word)));
+                for(int j=0;j<layerSize;j++)
+                {
+                    vector[j] +=  syn0[word2index.get(word)][j]*idf;
+                }
+//                score*=1.0/(1.0+Math.exp(-matrixDot(syn0[i],syn0[word2index.get(word)])));
+            }
+        }
+
+        return vector;
     }
 
     public ArrayList<ResultSet> probabWordforSentence(String sentence) throws Exception

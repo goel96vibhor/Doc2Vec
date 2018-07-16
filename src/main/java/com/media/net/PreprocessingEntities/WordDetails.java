@@ -20,6 +20,7 @@ public class WordDetails
     public static HashMap<String,Integer> word2index=null;
     public static Map<String,HuffmanNode> huffmanNodeMap=null;
     private static Logger logger = Logger.getLogger(WordDetails.class.getName());
+    public static Integer maxWordFreq =0;
 
     public static void buildVocab(String writeDirpath)
     {
@@ -118,6 +119,10 @@ public class WordDetails
             word2index=(HashMap<String, Integer>)inputStream.readObject();
             huffmanNodeMap=(Map<String,HuffmanNode>)inputStream.readObject();
             inputStream.close();
+            for(Integer freq : vocabulary.values())
+            {
+                if(freq>maxWordFreq)maxWordFreq = freq;
+            }
             logger.info("vocabulary size:"+vocabulary.size());
             logger.info("index2word size:"+index2Word.size());
             logger.info("index2word first:"+index2Word.get(0)+", count:"+vocabulary.get(index2Word.get(0)));
@@ -135,6 +140,23 @@ public class WordDetails
             ex.printStackTrace();
         }
 
+    }
+
+    public static HashMap<String, Integer> getTermListforContent(String sentence) throws Exception
+    {
+        ArrayList<String> sentenceTokens= VocabBuilder.tokenize(sentence);
+        Integer wordFound = 0;
+        HashMap<String, Integer> termList =new HashMap<String, Integer>();
+        for(String word:sentenceTokens)
+        {
+            if(word2index.containsKey(word))
+            {
+                wordFound++;
+                termList.put(word,vocabulary.get(word));
+            }
+        }
+        if ((wordFound==0))throw new Exception("Could not create termlist. None of the words are in the vocabulary.");
+        return termList;
     }
 
 

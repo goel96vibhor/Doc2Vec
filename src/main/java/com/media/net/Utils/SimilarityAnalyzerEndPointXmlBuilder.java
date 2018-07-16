@@ -1,9 +1,13 @@
 package com.media.net.Utils;
 
 import com.media.net.Beans.APIResultBean;
+import com.media.net.PreprocessingEntities.WordDetails;
 import org.apache.log4j.Logger;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Created with IntelliJ IDEA.
@@ -17,7 +21,7 @@ public class SimilarityAnalyzerEndPointXmlBuilder {
     private static final Logger logger = Logger.getLogger(SimilarityAnalyzerEndPointXmlBuilder.class);
     private static DecimalFormat df = new DecimalFormat("0.0000");
 
-    public static String getXMLforPairSimlarity(APIResultBean apiResultBean) {
+    public static String getXMLforWordPairSimlarity(APIResultBean apiResultBean) {
 
         StringBuilder buffer = new StringBuilder();
         logger.info("Trying to create xml..");
@@ -38,15 +42,61 @@ public class SimilarityAnalyzerEndPointXmlBuilder {
         return xmlBuffer.toString();
     }
 
-    public static String getXMLforWordResultSet(APIResultBean apiResultBean) {
+    public static String getXMLforSentencePairSimlarity(APIResultBean apiResultBean) {
 
         StringBuilder buffer = new StringBuilder();
         logger.info("Trying to create xml..");
         buffer.append("<ROOT>");
 
+        buffer.append("<Sentence>").append("<![CDATA[").append(apiResultBean.getSentence1()).append("]]>").append("</Sentence>");
+        buffer.append("<Sentence>").append("<![CDATA[").append(apiResultBean.getSentence2()).append("]]>").append("</Sentence>");
+        buffer.append("<similarity>").append(df.format(apiResultBean.getSimilarity())).append("</similarity>");
+
+
+        buffer.append("<error><![CDATA[").append(apiResultBean.getError()).append("]]></error>");
+        buffer.append("</ROOT>");
+        StringBuilder xmlBuffer = new StringBuilder();
+        xmlBuffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        xmlBuffer.append("<RESULT>");
+        xmlBuffer.append(buffer.toString()) ;
+        xmlBuffer.append("</RESULT>");
+        return xmlBuffer.toString();
+    }
+
+    public static String getXMLforWordResultSet(APIResultBean apiResultBean) {
+
+        StringBuilder buffer = new StringBuilder();
+        logger.info("Trying to create xml..");
+        buffer.append("<ROOT>");
+        String terms;
+
         buffer.append("<Word>").append("<![CDATA[").append(apiResultBean.getWord1()).append("]]>").append("</Word>");
         buffer.append("<Content>").append("<![CDATA[").append(apiResultBean.getContent()).append("]]>").append("</Content>");
+        buffer.append("<MaxWordFreq>"+ WordDetails.maxWordFreq+"</MaxWordFreq>");
+        buffer.append("<TermFrequencies>");
+        try {
+            if(apiResultBean.getContent()!=null)
+                terms = apiResultBean.getContent();
+            else terms = apiResultBean.getWord1();
+            HashMap<String, Integer> termList = WordDetails.getTermListforContent(terms);
+            for(String term : termList.keySet())
+            {
+                buffer.append("<Word>");
+                buffer.append("<Term>").append("<![CDATA[").append(term).append("]]>").append("</Term>");
+                buffer.append("<Freq>"+termList.get(term)+"</Freq>") ;
+                buffer.append("</Word>");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.error(ex.getMessage());
+        }
+        buffer.append("</TermFrequencies>");
 
+        if(apiResultBean.getVector()!=null)
+        {
+            buffer.append("<Vector>").append("<![CDATA[").append(Arrays.toString(apiResultBean.getVector())).append("]]>").append("</Vector>");
+        }
         buffer.append("<ResultSets>");
         for(ResultSet resultSet : apiResultBean.getResultSets())
         {

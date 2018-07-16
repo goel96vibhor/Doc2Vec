@@ -1,8 +1,5 @@
 package com.media.net;
 
-import com.autoopt.utils.ApplicationPropertiesInitializer;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.media.net.Beans.APIResultBean;
 import com.media.net.Beans.DocBean;
 import com.media.net.NeuralNet.Doc2VecTrainer;
@@ -19,7 +16,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
@@ -59,6 +55,7 @@ public class WordSimilarityAnalyzerEndPoint extends HttpServlet {
                     WordDetails.word2index);
 
             doc2VecWorker= new Doc2VecWorker(networkTrainer);
+            if(WordDetails.maxWordFreq <=0)throw new Exception("Word frequencies not loaded from word details.");
 
         }
         catch (Exception ex)
@@ -75,7 +72,8 @@ public class WordSimilarityAnalyzerEndPoint extends HttpServlet {
             String task;
             String url;
             String title;
-            String content;
+            String sentence1;
+            String sentence2;
             Double similarity;
 
             response.setCharacterEncoding("UTF-8");
@@ -94,8 +92,10 @@ public class WordSimilarityAnalyzerEndPoint extends HttpServlet {
             if(word2 !=null)word2 = word2.trim().toLowerCase();
             negword = request.getParameter("negword");
             if(negword !=null)negword = negword.trim().toLowerCase();
-            content = request.getParameter("sentence");
-            if(content !=null)content = content.trim().toLowerCase();
+            sentence1 = request.getParameter("sentence");
+            if(sentence1 !=null)sentence1 = sentence1.trim().toLowerCase();
+            sentence2 = request.getParameter("sentence2");
+            if(sentence2 !=null)sentence2 = sentence2.trim().toLowerCase();
             url=  request.getParameter("url");
 
             logger.info("Got request for task :"+task);
@@ -121,7 +121,29 @@ public class WordSimilarityAnalyzerEndPoint extends HttpServlet {
                     apiResultBean.setError(ex.getMessage());
                 }
 
-                out.print(SimilarityAnalyzerEndPointXmlBuilder.getXMLforPairSimlarity(apiResultBean));
+                out.print(SimilarityAnalyzerEndPointXmlBuilder.getXMLforWordPairSimlarity(apiResultBean));
+            }
+            else if(task.trim().toLowerCase().equals("sentpairsim"))
+            {
+                apiResultBean.setSentence1(sentence1);
+                apiResultBean.setSentence2(sentence2);
+                logger.info("Calculating sentence pair similarity for sentence:'"+sentence1+"', '"+sentence2+"'");
+                if(sentence1== null || sentence2 == null)
+                {
+                    apiResultBean.setError("None of the sentences should be null for sentence-pair similarity");
+                }
+                try {
+                    similarity = networkTrainer.sentencePairSimilarity(sentence1, sentence2);
+                    apiResultBean.setSimilarity(similarity);
+                    logger.info("Similarity obtained:"+similarity);
+                }
+                catch (Exception ex)
+                {
+                    logger.error(ex.getMessage());
+                    apiResultBean.setError(ex.getMessage());
+                }
+
+                out.print(SimilarityAnalyzerEndPointXmlBuilder.getXMLforSentencePairSimlarity(apiResultBean));
             }
             else if(task.trim().toLowerCase().equals("simword"))
             {
@@ -132,6 +154,7 @@ public class WordSimilarityAnalyzerEndPoint extends HttpServlet {
                 }
                 try {
                     apiResultBean.setResultSets(networkTrainer.mostSimilartoWord(word1));
+                    apiResultBean.setVector(networkTrainer.getTVforWord(word1));
                 }
                 catch (Exception ex)
                 {
@@ -141,13 +164,14 @@ public class WordSimilarityAnalyzerEndPoint extends HttpServlet {
             }
             else if(task.trim().toLowerCase().equals("simsent"))
             {
-                apiResultBean.setContent(content);
-                if(content== null)
+                apiResultBean.setContent(sentence1);
+                if(sentence1== null)
                 {
                     apiResultBean.setError("Content should not be null for getting most similar word");
                 }
                 try {
-                    apiResultBean.setResultSets(networkTrainer.probabWordforSentence(content));
+                    apiResultBean.setResultSets(networkTrainer.probabWordforSentence(sentence1));
+                    apiResultBean.setVector(networkTrainer.getTfWeightedTVforSentence(sentence1));
                 }
                 catch (Exception ex)
                 {
@@ -179,7 +203,7 @@ public class WordSimilarityAnalyzerEndPoint extends HttpServlet {
                 apiResultBean.setWord1(min1);
                 apiResultBean.setWord2(min2);
                 apiResultBean.setSimilarity(minScore);
-                out.print(SimilarityAnalyzerEndPointXmlBuilder.getXMLforRandomDisSimilar(apiResultBean,posCount,negCount));
+                out.print(SimilarityAnalyzerEndPointXmlBuilder.getXMLforRandomDisSimilar(apiResultBean, posCount, negCount));
 //                System.out.println(posCount+" "+negCount);
 
             }
@@ -210,7 +234,7 @@ public class WordSimilarityAnalyzerEndPoint extends HttpServlet {
                 titleDocBean.setTitle(docBean.getTitle());
                 vector= doc2VecWorker.inferDocument(titleDocBean,alpha,minAlpha,20,networkTrainer);
                 try {
-                    apiResultBean.setTitleResultSets(networkTrainer.mostSimilarDocumentToVector(vector,10));
+                    apiResultBean.setTitleResultSets(networkTrainer.mostSimilarDocumentToVector(vector, 10));
                 }
                 catch (Exception ex)
                 {

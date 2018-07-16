@@ -23,7 +23,34 @@ public class APIResultBean {
     private String title;
     private String url;
     private String content;
+    private String sentence1;
+    private String sentence2;
     private Long entityId;
+    private double vector[]=null;
+
+    public String getSentence1() {
+        return sentence1;
+    }
+
+    public void setSentence1(String sentence1) {
+        this.sentence1 = sentence1;
+    }
+
+    public String getSentence2() {
+        return sentence2;
+    }
+
+    public void setSentence2(String sentence2) {
+        this.sentence2 = sentence2;
+    }
+
+    public double[] getVector() {
+        return vector;
+    }
+
+    public void setVector(double[] vector) {
+        this.vector = vector;
+    }
 
     public String getUrl() {
         return url;
